@@ -14,9 +14,11 @@ import android.widget.Toast;
 import com.tengu.sharetoclipboard.utils.NotificationUtil;
 import com.tengu.sharetoclipboard.utils.PreferenceUtil;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 
 import ezvcard.VCard;
@@ -146,7 +148,11 @@ public class ShareToClipboardActivity extends Activity {
 
     private String getSendTextString(Intent intent) {
         String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
-        String sharedTitle = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+        final String sharedTitle = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+        final Uri uri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        if (uri != null) {
+            return getStreamText(uri);
+        }
         if (sharedText == null && sharedTitle == null) return null;
         if (sharedText != null) {
             if (sharedTitle != null &&
@@ -157,6 +163,20 @@ public class ShareToClipboardActivity extends Activity {
             return sharedText;
         } else {
             return sharedTitle;
+        }
+    }
+
+    private String getStreamText(final Uri uri) {
+        try {
+            final InputStream in = getContentResolver().openInputStream(uri);
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            final StringBuilder builder = new StringBuilder();
+            for (String line; (line = reader.readLine()) != null; ) {
+                builder.append(line).append('\n');
+            }
+            return builder.toString();
+        } catch (Exception e) {
+            return null;
         }
     }
 
